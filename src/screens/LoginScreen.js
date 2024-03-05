@@ -14,12 +14,10 @@ import {
   signInWithEmailAndPassword,
   sendEmailVerification,
   sendPasswordResetEmail,
-  signOut,
 } from "firebase/auth";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { auth } from "../../firebase";
 import { Toast } from "toastify-react-native";
-import Icon from "react-native-vector-icons/FontAwesome";
 import Logo from "../../assets/ridemoto-logo.png";
 import getUserData from "../hooks/getUserData";
 import PasswordInput from "../components/PasswordInput";
@@ -30,13 +28,10 @@ export default function LoginScreen() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { userData } = getUserData();
 
-  const toggleShowPassword = () => {
-    setShowPassword(!showPassword);
-  };
+
 
   const handleLogin = async () => {
     if (loading) return;
@@ -116,7 +111,6 @@ export default function LoginScreen() {
         <Image style={styles.logo} source={Logo} />
         <Text style={styles.title}>RideMoto</Text>
         <Text style={styles.subTitle}>Welcome back Driver!</Text>
-        <Text>Login to continue</Text>
         <View style={styles.form}>
           <TextInput
             style={styles.input}
@@ -157,13 +151,14 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20
+    padding: 20,
+    backgroundColor: "#fff",
+
   },
   imageBackground: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#fff",
   },
   logo: {
     width: 300,

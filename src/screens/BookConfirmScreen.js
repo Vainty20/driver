@@ -1,17 +1,39 @@
-import React, { useState, useE} from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, Image, SafeAreaView, ActivityIndicator ,Alert} from 'react-native';
-import { doc, updateDoc } from 'firebase/firestore';
-import { auth, db } from '../../firebase';
-import Ionicons from 'react-native-vector-icons/Ionicons';
-import Map from '../components/Map';
-import findUserData from '../hooks/findUserData';
-import getUserData from '../hooks/getUserData';
-import { Toast } from 'toastify-react-native'; 
-import { useNavigation } from '@react-navigation/native';
+import React, { useState, useE } from "react";
+import {
+  StyleSheet,
+  Text,
+  View,
+  TouchableOpacity,
+  Image,
+  SafeAreaView,
+  ActivityIndicator,
+  Alert,
+} from "react-native";
+import { doc, updateDoc } from "firebase/firestore";
+import { auth, db } from "../../firebase";
+import Ionicons from "react-native-vector-icons/Ionicons";
+import Map from "../components/Map";
+import findUserData from "../hooks/findUserData";
+import getUserData from "../hooks/getUserData";
+import { Toast } from "toastify-react-native";
+import { useNavigation } from "@react-navigation/native";
 
 export default function BookConfirmScreen({ route }) {
   const navigation = useNavigation();
-  const { id, location, locationCoordinates, userId, pickupLocation, pickupCoordinates, dropoffLocation, dropoffCoordinates, rideDistance, rideTime, ridePrice, driverId } = route.params;
+  const {
+    id,
+    location,
+    locationCoordinates,
+    userId,
+    pickupLocation,
+    pickupCoordinates,
+    dropoffLocation,
+    dropoffCoordinates,
+    rideDistance,
+    rideTime,
+    ridePrice,
+    driverId,
+  } = route.params;
   const { userData, loading: userDataLoading } = findUserData({ userId });
   const { userData: currentUser } = getUserData();
   const [loading, setLoading] = useState(false);
@@ -23,14 +45,14 @@ export default function BookConfirmScreen({ route }) {
 
     setLoading(true);
     try {
-      const bookDocRef = doc(db, 'book', id);
+      const bookDocRef = doc(db, "book", id);
       await updateDoc(bookDocRef, {
         driverId: auth.currentUser.uid,
       });
       Toast.success("Booking confirmed");
       setIsPickupConfirmed(true);
     } catch (error) {
-      Toast.error('Error confirming booking: ' + error.message);
+      Toast.error("Error confirming booking: " + error.message);
     } finally {
       setLoading(false);
     }
@@ -44,30 +66,66 @@ export default function BookConfirmScreen({ route }) {
         {
           text: "Cancel",
           onPress: () => {},
-          style: "cancel"
+          style: "cancel",
         },
         {
           text: "Confirm",
           onPress: async () => {
-            const bookDocRef = doc(db, 'book', id);
+            const bookDocRef = doc(db, "book", id);
             await updateDoc(bookDocRef, {
               isDropoff: true,
             });
             setConfirmDropoff(true);
             navigation.goBack();
-          }
-        }
+          },
+        },
       ],
       { cancelable: false }
     );
   };
 
-  
+  const handleBookPickup = async () => {
+    if (loading) return;
+
+    setLoading(true);
+    try {
+      Alert.alert(
+        "Confirm Pickup",
+        "Are you sure you want to pickup?",
+        [
+          {
+            text: "Cancel",
+            onPress: () => {},
+            style: "cancel",
+          },
+          {
+            text: "Pickup",
+            onPress: async () => {
+              const bookDocRef = doc(db, "book", id);
+              await updateDoc(bookDocRef, {
+                isPickUp: true,
+              });
+              setIsPickupConfirmed(true);
+              setLoading(false);
+            },
+          },
+        ],
+        { cancelable: false }
+      );
+    } catch (error) {
+      Toast.error("Error confirming booking: " + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <SafeAreaView style={styles.container}>
-      <Map origin={location} originCoords={locationCoordinates} 
-       destination={driverId ? dropoffLocation: pickupLocation}
-       destinationCoords={driverId ? dropoffCoordinates : pickupCoordinates} />
+      <Map
+        origin={location}
+        originCoords={locationCoordinates}
+        destination={driverId ? dropoffLocation : pickupLocation}
+        destinationCoords={driverId ? dropoffCoordinates : pickupCoordinates}
+      />
       <View style={styles.contentContainer}>
         <View style={styles.cardContainer}>
           <View style={styles.rideInfoContainer}>
@@ -84,7 +142,11 @@ export default function BookConfirmScreen({ route }) {
             <View style={styles.locationDiv}>
               <Image
                 style={styles.profilePic}
-                source={{ uri: (userData && userData.profilePicture) || 'https://i.stack.imgur.com/l60Hf.png' }}
+                source={{
+                  uri:
+                    (userData && userData.profilePicture) ||
+                    "https://i.stack.imgur.com/l60Hf.png",
+                }}
               />
               <Text>{pickupLocation}</Text>
             </View>
@@ -97,44 +159,81 @@ export default function BookConfirmScreen({ route }) {
               <Text>{dropoffLocation}</Text>
             </View>
           </View>
-          <Text>Total of <Text style={{ fontWeight: 'bold', fontSize: 18 }}>{ridePrice}</Text></Text>
-          <TouchableOpacity onPress={()=> navigation.push("FareMatrix")}>
-              <Text>View our Fare Matrix</Text>
-            </TouchableOpacity>
+          <Text>
+            Total of{" "}
+            <Text style={{ fontWeight: "bold", fontSize: 18 }}>
+              {ridePrice}
+            </Text>
+          </Text>
+          <TouchableOpacity onPress={() => navigation.push("FareMatrix")}>
+            <Text>View our Fare Matrix</Text>
+          </TouchableOpacity>
           {!driverId ? (
-            <TouchableOpacity style={styles.button} disabled={loading} onPress={handleBookConfirm}>
-              <Text style={styles.buttonText}>{loading ? <ActivityIndicator size={25} color="white" /> : 'Pickup'}</Text>
+            <TouchableOpacity
+              style={styles.button}
+              disabled={loading}
+              onPress={handleBookConfirm}
+            >
+              <Text style={styles.buttonText}>
+                {loading ? (
+                  <ActivityIndicator size={25} color="white" />
+                ) : (
+                  "Confirm"
+                )}
+              </Text>
+            </TouchableOpacity>
+          ) : !isPickupConfirmed ? (
+            <TouchableOpacity
+              style={styles.button}
+              disabled={loading}
+              onPress={handleBookPickup}
+            >
+              <Text style={styles.buttonText}>
+                {loading ? (
+                  <ActivityIndicator size={25} color="white" />
+                ) : (
+                  "Pickup"
+                )}
+              </Text>
             </TouchableOpacity>
           ) : (
-            <TouchableOpacity style={styles.dropoffButton} disabled={loading} onPress={handleBookDropoff}>
-              <Text style={styles.buttonText}>{loading ? <ActivityIndicator size={25} color="white" /> : 'Dropoff'}</Text>
+            <TouchableOpacity
+              style={styles.dropoffButton}
+              disabled={loading}
+              onPress={handleBookDropoff}
+            >
+              <Text style={styles.buttonText}>
+                {loading ? (
+                  <ActivityIndicator size={25} color="white" />
+                ) : (
+                  "Dropoff"
+                )}
+              </Text>
             </TouchableOpacity>
           )}
         </View>
       </View>
     </SafeAreaView>
   );
-};
-
-
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    position: 'relative',
+    position: "relative",
   },
   contentContainer: {
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    position: 'absolute',
+    justifyContent: "flex-end",
+    alignItems: "center",
+    position: "absolute",
     top: 0,
     right: 0,
     bottom: 0,
     left: 0,
   },
   cardContainer: {
-    width: '100%',
-    backgroundColor: '#fff',
+    width: "100%",
+    backgroundColor: "#fff",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     gap: 20,
@@ -142,70 +241,70 @@ const styles = StyleSheet.create({
   },
   subTitle: {
     fontSize: 18,
-    fontWeight: '500',
+    fontWeight: "500",
     marginBottom: 6,
-    color: '#5c5c5c'
+    color: "#5c5c5c",
   },
   locationContainer: {
     padding: 15,
     borderWidth: 1,
-    borderColor: 'gray',
+    borderColor: "gray",
     borderRadius: 12,
   },
   locationDiv: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingRight: 20,
     paddingVertical: 6,
-    gap: 12
+    gap: 12,
   },
   separate: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 6,
     gap: 2,
   },
   separateLine: {
-    width: '90%',
+    width: "90%",
     height: 1,
-    backgroundColor: 'gray'
+    backgroundColor: "gray",
   },
   profilePic: {
     width: 32,
     height: 32,
     borderWidth: 2,
-    borderColor: 'gray',
+    borderColor: "gray",
     borderRadius: 50,
   },
   rideInfoContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 6
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 6,
   },
   rideInfoDiv: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
   button: {
-    alignItems: 'center',
-    backgroundColor: '#0066cc',
+    alignItems: "center",
+    backgroundColor: "#0066cc",
     padding: 15,
     borderRadius: 12,
-    width: '100%',
+    width: "100%",
   },
   dropoffButton: {
-    alignItems: 'center',
-    backgroundColor: 'red',
+    alignItems: "center",
+    backgroundColor: "red",
     padding: 15,
     borderRadius: 12,
-    width: '100%',
+    width: "100%",
   },
   buttonText: {
-    color: 'white',
-    textAlign: 'center',
+    color: "white",
+    textAlign: "center",
     fontSize: 15,
-    fontWeight: 'bold'
+    fontWeight: "bold",
   },
 });

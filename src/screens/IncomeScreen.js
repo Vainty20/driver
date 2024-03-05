@@ -1,14 +1,34 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, useWindowDimensions, TouchableOpacity, Modal, Image } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import getUserBookings from '../hooks/getUserBookings';
-import Loading from '../components/Loading';
-import { BarChart } from 'react-native-chart-kit';
-import QrCode from '../../assets/gcash.png';
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  useWindowDimensions,
+  TouchableOpacity,
+  Modal,
+  Image,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import getUserBookings from "../hooks/getUserBookings";
+import Loading from "../components/Loading";
+import { BarChart } from "react-native-chart-kit";
+import QrCode from "../../assets/gcash.png";
+import DatePicker from "@react-native-community/datetimepicker";
 
 const monthNames = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
 ];
 
 export default function IncomeScreen() {
@@ -19,6 +39,8 @@ export default function IncomeScreen() {
   const [totalAppIncome, setTotalAppIncome] = useState(0);
   const [totalDriverIncome, setTotalDriverIncome] = useState(0);
   const [modalVisible, setModalVisible] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const handlePayNow = () => {
     setModalVisible(true);
@@ -31,13 +53,19 @@ export default function IncomeScreen() {
 
     userBookings.forEach((booking) => {
       const monthIndex = new Date(booking.timestamp).getMonth();
-      const ridePriceInt = parseInt(booking.ridePrice.replace('₱', '').trim(), 10);
+      const ridePriceInt = parseInt(
+        booking.ridePrice.replace("₱", "").trim(),
+        10
+      );
       incomeData[`${monthIndex}`] += ridePriceInt;
     });
 
     const chartData = [];
     Object.keys(incomeData).forEach((key) => {
-      chartData.push({ month: monthNames[parseInt(key)], income: incomeData[key] });
+      chartData.push({
+        month: monthNames[parseInt(key)],
+        income: incomeData[key],
+      });
     });
 
     setMonthlyIncome(chartData);
@@ -48,9 +76,14 @@ export default function IncomeScreen() {
 
     userBookings.forEach((booking) => {
       const date = new Date(booking.timestamp);
-      const dayKey = `${date.getDate()} ${monthNames[date.getMonth()]} ${date.getFullYear()}`;
-      const ridePriceInt = parseInt(booking.ridePrice.replace('₱', '').trim(), 10);
-      
+      const dayKey = `${date.getDate()} ${
+        monthNames[date.getMonth()]
+      } ${date.getFullYear()}`;
+      const ridePriceInt = parseInt(
+        booking.ridePrice.replace("₱", "").trim(),
+        10
+      );
+
       if (incomeData[dayKey]) {
         incomeData[dayKey] += ridePriceInt;
       } else {
@@ -75,12 +108,67 @@ export default function IncomeScreen() {
   }, [userBookings]);
 
 
+  
+
+
+  const handleFilterByDate = () => {
+    
+    const filteredData = userBookings.filter((booking) => {
+      const bookingDate = new Date(booking.timestamp).toDateString();
+      const selectedDateString = selectedDate.toDateString();
+      return bookingDate === selectedDateString;
+    });
+    const incomeData = {};
+
+    filteredData.forEach((booking) => {
+      const date = new Date(booking.timestamp);
+      const dayKey = `${date.getDate()} ${
+        monthNames[date.getMonth()]
+      } ${date.getFullYear()}`;
+      const ridePriceInt = parseInt(
+        booking.ridePrice.replace("₱", "").trim(),
+        10
+      );
+
+      if (incomeData[dayKey]) {
+        incomeData[dayKey] += ridePriceInt;
+      } else {
+        incomeData[dayKey] = ridePriceInt;
+      }
+    });
+
+    const chartData = [];
+    Object.keys(incomeData).forEach((key) => {
+      chartData.push({ day: key, income: incomeData[key] });
+    });
+
+    setDailyIncome(chartData);
+    let totalIncome = 0;
+    chartData.forEach((item) => {
+      totalIncome += item.income;
+    });
+    const appIncome = totalIncome * 0.4;
+    const driverIncome = totalIncome * 0.6;
+    setTotalAppIncome(appIncome);
+    setTotalDriverIncome(driverIncome);
+  };
+
   const renderItem = ({ item }) => (
     <View style={styles.itemContainer}>
       <Text style={styles.itemText}>{item.day}</Text>
       <Text style={styles.itemText}>₱{item.income}</Text>
     </View>
   );
+
+  
+  const handleDateChange = (event, selectedDate) => {
+    setShowDatePicker(false); 
+    if (selectedDate) {
+      setSelectedDate(selectedDate); 
+    }
+  };
+  
+
 
   return (
     <SafeAreaView style={styles.container}>
@@ -97,9 +185,9 @@ export default function IncomeScreen() {
             height={300}
             yAxisLabel="₱"
             chartConfig={{
-              backgroundColor: '#ffffff',
-              backgroundGradientFrom: '#ffffff',
-              backgroundGradientTo: '#ffffff',
+              backgroundColor: "#ffffff",
+              backgroundGradientFrom: "#ffffff",
+              backgroundGradientTo: "#ffffff",
               decimalPlaces: 0,
               color: (opacity = 1) => `rgba(0, 102, 204, ${opacity})`,
               labelColor: (opacity = 1) => `rgba(0, 102, 204, ${opacity})`,
@@ -115,6 +203,19 @@ export default function IncomeScreen() {
       </View>
       <View style={styles.listContainer}>
         <Text style={styles.listTitle}>Daily Income</Text>
+        <TouchableOpacity style={styles.input} onPress={() => setShowDatePicker(true)}>
+
+          <Text style={styles.filterButtonText}>Filter by Date</Text>
+        </TouchableOpacity>
+        {showDatePicker && (
+          <DatePicker
+            testID="datePicker"
+            value={selectedDate}
+            mode="date"
+            display="default"
+            onChange={handleDateChange}
+          />
+        )}
         {dailyIncome.length > 0 ? (
           <FlatList
             data={dailyIncome}
@@ -168,58 +269,58 @@ const styles = StyleSheet.create({
   },
   listTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 10,
   },
   itemContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
+    borderBottomColor: "#ccc",
   },
   itemText: {
     fontSize: 16,
   },
   noDataText: {
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 10,
     fontSize: 16,
   },
   button: {
-    alignItems: 'center',
-    backgroundColor: '#0066cc',
+    alignItems: "center",
+    backgroundColor: "#0066cc",
     padding: 15,
     borderRadius: 12,
     marginTop: 20,
-    width: '100%',
+    width: "100%",
   },
   buttonText: {
-    color: 'white',
-    textAlign: 'center',
+    color: "white",
+    textAlign: "center",
     fontSize: 15,
-    fontWeight: 'bold'
+    fontWeight: "bold",
   },
   modalContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   modalContent: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     padding: 20,
     borderRadius: 10,
-    alignItems: 'center',
+    alignItems: "center",
   },
   modalImage: {
     width: 200,
     height: 300,
-    resizeMode: 'cover',
+    resizeMode: "cover",
     marginBottom: 20,
   },
   modalCloseText: {
-    color: '#0066cc',
+    color: "#0066cc",
     fontSize: 16,
   },
 });

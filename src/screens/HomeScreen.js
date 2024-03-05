@@ -4,12 +4,10 @@
   import { View, Text, TouchableOpacity, Image, StyleSheet, } from 'react-native';
   import { useNavigation } from '@react-navigation/native';
   import { SafeAreaView } from 'react-native-safe-area-context';
-  import { Toast } from 'toastify-react-native';
   import Map from '../components/Map';
   import getUserData from '../hooks/getUserData';
   import getUserLocation from '../hooks/getUserLocation';
   import Loading from '../components/Loading';
-  import BookForm from '../components/BookForm';
   import getUserBookings from '../hooks/getUserBookings';
 import AllBook from '../components/AllBook';
 
@@ -40,11 +38,11 @@ import AllBook from '../components/AllBook';
 
     }, [userData, latestOngoingBooking])
     
+    if (isLoading) return <Loading/>
+
     return (
       <SafeAreaView style={styles.container}>
-        {
-          isLoading ? <Loading /> : (
-          <>
+
            <Map 
             origin={location} 
             originCoords={locationCoordinates}
@@ -67,8 +65,7 @@ import AllBook from '../components/AllBook';
               <AllBook location={location} locationCoordinates={locationCoordinates}/>
             </View>
           </View>
-          </>
-        )}
+      
       </SafeAreaView>
     );
   }

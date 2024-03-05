@@ -28,7 +28,7 @@ const getCurrentBooking = ({ id }) => {
     };
 
     fetchCurrentBookData();
-  }, [id, currentBooking]); 
+  }, [id]); 
 
   return { currentBooking, loading};
 };

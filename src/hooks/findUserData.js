@@ -29,7 +29,7 @@ const findUserData = ({userId}) => {
     };
 
     fetchUserData();
-  }, []);
+  }, [userData]);
 
   return { userData, loading };
 };
