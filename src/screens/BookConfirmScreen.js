@@ -122,7 +122,7 @@ export default function BookConfirmScreen({ route }) {
     }
   };
 
-  if(userDataLoading || locationLoading) return <Loading/>
+  if(locationLoading) return <Loading/>
   
   return (
     <SafeAreaView style={styles.container}>

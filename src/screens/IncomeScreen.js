@@ -35,6 +35,7 @@ export default function IncomeScreen() {
   const { userBookings, loading } = getUserBookings();
   const [monthlyIncome, setMonthlyIncome] = useState([]);
   const [dailyIncome, setDailyIncome] = useState([]);
+  const [filteredDailyIncome, setFilteredDailyIncome] = useState([]);
   const windowWidth = useWindowDimensions().width;
   const [totalAppIncome, setTotalAppIncome] = useState(0);
   const [totalDriverIncome, setTotalDriverIncome] = useState(0);
@@ -45,6 +46,44 @@ export default function IncomeScreen() {
   const handlePayNow = () => {
     setModalVisible(true);
   };
+
+  useEffect(() => {
+    const incomeData = {};
+
+    userBookings.forEach((booking) => {
+      const date = new Date(booking.timestamp);
+      const dayKey = `${date.getDate()} ${
+        monthNames[date.getMonth()]
+      } ${date.getFullYear()}`;
+      const ridePriceInt = parseInt(
+        booking.ridePrice.replace("₱", "").trim(),
+        10
+      );
+
+      if (incomeData[dayKey]) {
+        incomeData[dayKey] += ridePriceInt;
+      } else {
+        incomeData[dayKey] = ridePriceInt;
+      }
+    });
+
+    const chartData = [];
+    Object.keys(incomeData).forEach((key) => {
+      chartData.push({ day: key, income: incomeData[key] });
+    });
+
+    setDailyIncome(chartData);
+    setFilteredDailyIncome(chartData); // Initially set filtered daily income to all daily income
+    let totalIncome = 0;
+    chartData.forEach((item) => {
+      totalIncome += item.income;
+    });
+    const appIncome = totalIncome * 0.4;
+    const driverIncome = totalIncome * 0.6;
+    setTotalAppIncome(appIncome);
+    setTotalDriverIncome(driverIncome);
+  }, [userBookings]);
+
   useEffect(() => {
     const incomeData = {};
     monthNames.forEach((month, index) => {
@@ -71,88 +110,6 @@ export default function IncomeScreen() {
     setMonthlyIncome(chartData);
   }, [userBookings]);
 
-  useEffect(() => {
-    const incomeData = {};
-
-    userBookings.forEach((booking) => {
-      const date = new Date(booking.timestamp);
-      const dayKey = `${date.getDate()} ${
-        monthNames[date.getMonth()]
-      } ${date.getFullYear()}`;
-      const ridePriceInt = parseInt(
-        booking.ridePrice.replace("₱", "").trim(),
-        10
-      );
-
-      if (incomeData[dayKey]) {
-        incomeData[dayKey] += ridePriceInt;
-      } else {
-        incomeData[dayKey] = ridePriceInt;
-      }
-    });
-
-    const chartData = [];
-    Object.keys(incomeData).forEach((key) => {
-      chartData.push({ day: key, income: incomeData[key] });
-    });
-
-    setDailyIncome(chartData);
-    let totalIncome = 0;
-    chartData.forEach((item) => {
-      totalIncome += item.income;
-    });
-    const appIncome = totalIncome * 0.4;
-    const driverIncome = totalIncome * 0.6;
-    setTotalAppIncome(appIncome);
-    setTotalDriverIncome(driverIncome);
-  }, [userBookings]);
-
-
-  
-
-
-  const handleFilterByDate = () => {
-    
-    const filteredData = userBookings.filter((booking) => {
-      const bookingDate = new Date(booking.timestamp).toDateString();
-      const selectedDateString = selectedDate.toDateString();
-      return bookingDate === selectedDateString;
-    });
-    const incomeData = {};
-
-    filteredData.forEach((booking) => {
-      const date = new Date(booking.timestamp);
-      const dayKey = `${date.getDate()} ${
-        monthNames[date.getMonth()]
-      } ${date.getFullYear()}`;
-      const ridePriceInt = parseInt(
-        booking.ridePrice.replace("₱", "").trim(),
-        10
-      );
-
-      if (incomeData[dayKey]) {
-        incomeData[dayKey] += ridePriceInt;
-      } else {
-        incomeData[dayKey] = ridePriceInt;
-      }
-    });
-
-    const chartData = [];
-    Object.keys(incomeData).forEach((key) => {
-      chartData.push({ day: key, income: incomeData[key] });
-    });
-
-    setDailyIncome(chartData);
-    let totalIncome = 0;
-    chartData.forEach((item) => {
-      totalIncome += item.income;
-    });
-    const appIncome = totalIncome * 0.4;
-    const driverIncome = totalIncome * 0.6;
-    setTotalAppIncome(appIncome);
-    setTotalDriverIncome(driverIncome);
-  };
-
   const renderItem = ({ item }) => (
     <View style={styles.itemContainer}>
       <Text style={styles.itemText}>{item.day}</Text>
@@ -160,15 +117,17 @@ export default function IncomeScreen() {
     </View>
   );
 
-  
   const handleDateChange = (event, selectedDate) => {
-    setShowDatePicker(false); 
+    setShowDatePicker(false);
     if (selectedDate) {
-      setSelectedDate(selectedDate); 
+      setSelectedDate(selectedDate);
+      const formattedDate = `${selectedDate.getDate()} ${
+        monthNames[selectedDate.getMonth()]
+      } ${selectedDate.getFullYear()}`;
+      const filteredData = dailyIncome.filter((item) => item.day === formattedDate);
+      setFilteredDailyIncome(filteredData);
     }
   };
-  
-
 
   return (
     <SafeAreaView style={styles.container}>
@@ -204,7 +163,6 @@ export default function IncomeScreen() {
       <View style={styles.listContainer}>
         <Text style={styles.listTitle}>Daily Income</Text>
         <TouchableOpacity style={styles.input} onPress={() => setShowDatePicker(true)}>
-
           <Text style={styles.filterButtonText}>Filter by Date</Text>
         </TouchableOpacity>
         {showDatePicker && (
@@ -216,14 +174,14 @@ export default function IncomeScreen() {
             onChange={handleDateChange}
           />
         )}
-        {dailyIncome.length > 0 ? (
+        {filteredDailyIncome.length > 0 ? (
           <FlatList
-            data={dailyIncome}
+            data={filteredDailyIncome}
             renderItem={renderItem}
             keyExtractor={(item, index) => index.toString()}
           />
         ) : (
-          <Text style={styles.noDataText}>No booking data available.</Text>
+          <Text style={styles.noDataText}>No booking data available for the selected date.</Text>
         )}
       </View>
       <Text>Total App: ₱{Math.round(totalAppIncome)}</Text>
