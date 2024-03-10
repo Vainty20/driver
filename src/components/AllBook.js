@@ -44,6 +44,9 @@ const AllBook = ({ location, locationCoordinates }) => {
             rideTime: item.rideTime,
             ridePrice: item.ridePrice,
             driverId: item.driverId,
+            userfirstName: item.userfirstName,
+            userlastName: item.userlastName,
+            userPhoneNumber: item.userPhoneNumber
           })
         }>
           <Text style={styles.buttonText}>Confirm a booking</Text>

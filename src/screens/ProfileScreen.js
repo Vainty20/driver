@@ -64,7 +64,7 @@ export default function ProfileScreen() {
                   const url = await getDownloadURL(storageRef);
                   setImage(url);
 
-                  const userDocRef = doc(db, "users", authUser.uid);
+                  const userDocRef = doc(db, "drivers", authUser.uid);
                   await setDoc(
                     userDocRef,
                     { profilePicture: url },

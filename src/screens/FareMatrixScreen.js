@@ -6,18 +6,17 @@ export default function FareMatrixScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <Image style={styles.logo} source={Logo} />
-
       <View style={styles.table}>
         <View style={styles.row}>
           <Text style={styles.cellHeader}>Distance (km)</Text>
-          <Text style={styles.cellHeader}>Price fare</Text>
+          <Text style={styles.cellHeader}>Amount</Text>
         </View>
         <View style={styles.row}>
           <Text style={styles.cell}>In first 3 km</Text>
           <Text style={styles.cell}>Minimum Fare: ₱50</Text>
         </View>
         <View style={styles.row}>
-          <Text style={styles.cell}>Every Next 1 km</Text>
+          <Text style={styles.cell}>Succeeding km</Text>
           <Text style={styles.cell}>Additional Fare: ₱20</Text>
         </View>
       </View>
@@ -32,7 +31,7 @@ export default function FareMatrixScreen() {
           <Text style={styles.cell}>₱50</Text>
         </View>
         <View style={styles.row}>
-          <Text style={styles.cellHeader}>12 km Additional Fare:</Text>
+          <Text style={styles.cellHeader}>12 km Fare/km:</Text>
           <Text style={styles.cell}>₱240</Text>
         </View>
         <Text style={{alignSelf: 'flex-end', margin: 12}}>

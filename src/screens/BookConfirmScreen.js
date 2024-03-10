@@ -17,13 +17,13 @@ import findUserData from "../hooks/findUserData";
 import getUserData from "../hooks/getUserData";
 import { Toast } from "toastify-react-native";
 import { useNavigation } from "@react-navigation/native";
+import getUserLocation from "../hooks/getUserLocation";
+import Loading from "../components/Loading";
 
 export default function BookConfirmScreen({ route }) {
   const navigation = useNavigation();
   const {
     id,
-    location,
-    locationCoordinates,
     userId,
     pickupLocation,
     pickupCoordinates,
@@ -33,9 +33,12 @@ export default function BookConfirmScreen({ route }) {
     rideTime,
     ridePrice,
     driverId,
+    userfirstName,
+    userlastName,
+    userPhoneNumber,
   } = route.params;
   const { userData, loading: userDataLoading } = findUserData({ userId });
-  const { userData: currentUser } = getUserData();
+  const { location, locationCoordinates, loading: locationLoading } = getUserLocation();
   const [loading, setLoading] = useState(false);
   const [isPickupConfirmed, setIsPickupConfirmed] = useState(false);
   const [confirmDropoff, setConfirmDropoff] = useState(false);
@@ -118,13 +121,16 @@ export default function BookConfirmScreen({ route }) {
       setLoading(false);
     }
   };
+
+  if(userDataLoading || locationLoading) return <Loading/>
+  
   return (
     <SafeAreaView style={styles.container}>
       <Map
         origin={location}
         originCoords={locationCoordinates}
-        destination={driverId ? dropoffLocation : pickupLocation}
-        destinationCoords={driverId ? dropoffCoordinates : pickupCoordinates}
+        destination={isPickupConfirmed ? dropoffLocation : pickupLocation}
+        destinationCoords={isPickupConfirmed ? dropoffCoordinates : pickupCoordinates}
       />
       <View style={styles.contentContainer}>
         <View style={styles.cardContainer}>
@@ -140,14 +146,7 @@ export default function BookConfirmScreen({ route }) {
           </View>
           <View style={styles.locationContainer}>
             <View style={styles.locationDiv}>
-              <Image
-                style={styles.profilePic}
-                source={{
-                  uri:
-                    (userData && userData.profilePicture) ||
-                    "https://i.stack.imgur.com/l60Hf.png",
-                }}
-              />
+              <Ionicons name="location-outline" size={32} />
               <Text>{pickupLocation}</Text>
             </View>
             <View style={styles.separate}>
@@ -159,15 +158,33 @@ export default function BookConfirmScreen({ route }) {
               <Text>{dropoffLocation}</Text>
             </View>
           </View>
-          <Text>
-            Total of{" "}
-            <Text style={{ fontWeight: "bold", fontSize: 18 }}>
-              {ridePrice}
+          <View style={styles.profileHeader}>
+            <Image
+              style={styles.profilePic}
+              source={{
+                uri:
+                  (userData && userData.profilePicture) ||
+                  "https://i.stack.imgur.com/l60Hf.png",
+              }}
+            />
+            <View>
+              <Text>
+                {userfirstName} {userlastName}
+              </Text>
+              <Text>{userPhoneNumber}</Text>
+            </View>
+          </View>
+          <View style={styles.totalContainer}>
+            <Text>
+              Total of{" "}
+              <Text style={{ fontWeight: "bold", fontSize: 18 }}>
+                {ridePrice}
+              </Text>
             </Text>
-          </Text>
-          <TouchableOpacity onPress={() => navigation.push("FareMatrix")}>
-            <Text>View our Fare Matrix</Text>
-          </TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.push("FareMatrix")}>
+              <Text>View our Fare Matrix</Text>
+            </TouchableOpacity>
+          </View>
           {!driverId ? (
             <TouchableOpacity
               style={styles.button}
@@ -231,6 +248,11 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
   },
+  totalContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
   cardContainer: {
     width: "100%",
     backgroundColor: "#fff",
@@ -268,6 +290,10 @@ const styles = StyleSheet.create({
     width: "90%",
     height: 1,
     backgroundColor: "gray",
+  },
+  profileHeader: {
+    flexDirection: "row",
+    gap: 12,
   },
   profilePic: {
     width: 32,
