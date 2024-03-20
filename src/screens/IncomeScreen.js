@@ -40,7 +40,7 @@ export default function IncomeScreen() {
   const [totalAppIncome, setTotalAppIncome] = useState(0);
   const [totalDriverIncome, setTotalDriverIncome] = useState(0);
   const [modalVisible, setModalVisible] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(new Date()); // Default selected date is current date
   const [showDatePicker, setShowDatePicker] = useState(false);
 
   const handlePayNow = () => {
@@ -73,7 +73,8 @@ export default function IncomeScreen() {
     });
 
     setDailyIncome(chartData);
-    setFilteredDailyIncome(chartData); // Initially set filtered daily income to all daily income
+    setTotalAppIncome(0);
+    setTotalDriverIncome(0);
     let totalIncome = 0;
     chartData.forEach((item) => {
       totalIncome += item.income;
@@ -85,30 +86,16 @@ export default function IncomeScreen() {
   }, [userBookings]);
 
   useEffect(() => {
-    const incomeData = {};
-    monthNames.forEach((month, index) => {
-      incomeData[`${index}`] = 0;
-    });
+    const formattedTodayDate = `${selectedDate.getDate()} ${
+      monthNames[selectedDate.getMonth()]
+    } ${selectedDate.getFullYear()}`;
 
-    userBookings.forEach((booking) => {
-      const monthIndex = new Date(booking.timestamp).getMonth();
-      const ridePriceInt = parseInt(
-        booking.ridePrice.replace("₱", "").trim(),
-        10
-      );
-      incomeData[`${monthIndex}`] += ridePriceInt;
-    });
+    const filteredData = dailyIncome.filter(
+      (item) => item.day === formattedTodayDate
+    );
 
-    const chartData = [];
-    Object.keys(incomeData).forEach((key) => {
-      chartData.push({
-        month: monthNames[parseInt(key)],
-        income: incomeData[key],
-      });
-    });
-
-    setMonthlyIncome(chartData);
-  }, [userBookings]);
+    setFilteredDailyIncome(filteredData);
+  }, [dailyIncome, selectedDate]);
 
   const renderItem = ({ item }) => (
     <View style={styles.itemContainer}>
@@ -121,11 +108,6 @@ export default function IncomeScreen() {
     setShowDatePicker(false);
     if (selectedDate) {
       setSelectedDate(selectedDate);
-      const formattedDate = `${selectedDate.getDate()} ${
-        monthNames[selectedDate.getMonth()]
-      } ${selectedDate.getFullYear()}`;
-      const filteredData = dailyIncome.filter((item) => item.day === formattedDate);
-      setFilteredDailyIncome(filteredData);
     }
   };
 
@@ -162,7 +144,10 @@ export default function IncomeScreen() {
       </View>
       <View style={styles.listContainer}>
         <Text style={styles.listTitle}>Daily Income</Text>
-        <TouchableOpacity style={styles.input} onPress={() => setShowDatePicker(true)}>
+        <TouchableOpacity
+          style={styles.input}
+          onPress={() => setShowDatePicker(true)}
+        >
           <Text style={styles.filterButtonText}>Filter by Date</Text>
         </TouchableOpacity>
         {showDatePicker && (
@@ -181,7 +166,9 @@ export default function IncomeScreen() {
             keyExtractor={(item, index) => index.toString()}
           />
         ) : (
-          <Text style={styles.noDataText}>No booking data available for the selected date.</Text>
+          <Text style={styles.noDataText}>
+            No booking data available for the selected date.
+          </Text>
         )}
       </View>
       <Text>Total App: ₱{Math.round(totalAppIncome)}</Text>
@@ -209,7 +196,6 @@ export default function IncomeScreen() {
     </SafeAreaView>
   );
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,

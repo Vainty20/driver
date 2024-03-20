@@ -1,4 +1,4 @@
-import React, { useState, useE } from "react";
+import React, { useState, useEffect } from "react";
 import {
   StyleSheet,
   Text,
@@ -16,12 +16,11 @@ import Map from "../components/Map";
 import findUserData from "../hooks/findUserData";
 import getUserData from "../hooks/getUserData";
 import { Toast } from "toastify-react-native";
-import { useNavigation } from "@react-navigation/native";
 import getUserLocation from "../hooks/getUserLocation";
 import Loading from "../components/Loading";
+import getCurrentBooking from "../hooks/getCurrentBooking copy";
 
-export default function BookConfirmScreen({ route }) {
-  const navigation = useNavigation();
+export default function BookConfirmScreen({ route, navigation }) {
   const {
     id,
     userId,
@@ -37,11 +36,27 @@ export default function BookConfirmScreen({ route }) {
     userlastName,
     userPhoneNumber,
   } = route.params;
-  const { userData, loading: userDataLoading } = findUserData({ userId });
-  const { location, locationCoordinates, loading: locationLoading } = getUserLocation();
+  const { userData, loading: userDataLoading } = findUserData({
+    userId,
+    navigation,
+  });
+  const { currentBooking, loading: currentBookingLoading } = getCurrentBooking({
+    id,
+  });
+  const {
+    location,
+    locationCoordinates,
+    loading: locationLoading,
+  } = getUserLocation();
   const [loading, setLoading] = useState(false);
   const [isPickupConfirmed, setIsPickupConfirmed] = useState(false);
   const [confirmDropoff, setConfirmDropoff] = useState(false);
+
+  useEffect(() => {
+    if (!userDataLoading && !currentBookingLoading && !locationLoading) {
+      setLoading(false);
+    }
+  }, [userDataLoading, currentBookingLoading, locationLoading]);
 
   const handleBookConfirm = async () => {
     if (loading) return;
@@ -52,10 +67,9 @@ export default function BookConfirmScreen({ route }) {
       await updateDoc(bookDocRef, {
         driverId: auth.currentUser.uid,
       });
-      Toast.success("Booking confirmed");
       setIsPickupConfirmed(true);
     } catch (error) {
-      Toast.error("Error confirming booking: " + error.message);
+      console.error("Error confirming booking:", error);
     } finally {
       setLoading(false);
     }
@@ -79,7 +93,7 @@ export default function BookConfirmScreen({ route }) {
               isDropoff: true,
             });
             setConfirmDropoff(true);
-            navigation.goBack();
+            navigation.push("Home");
           },
         },
       ],
@@ -109,28 +123,39 @@ export default function BookConfirmScreen({ route }) {
                 isPickUp: true,
               });
               setIsPickupConfirmed(true);
-              setLoading(false);
             },
           },
         ],
         { cancelable: false }
       );
     } catch (error) {
-      Toast.error("Error confirming booking: " + error.message);
+      console.error("Error confirming booking:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  if(locationLoading) return <Loading/>
-  
+  if (locationLoading) return <Loading />;
+
   return (
     <SafeAreaView style={styles.container}>
       <Map
         origin={location}
         originCoords={locationCoordinates}
-        destination={isPickupConfirmed ? dropoffLocation : pickupLocation}
-        destinationCoords={isPickupConfirmed ? dropoffCoordinates : pickupCoordinates}
+        destination={
+          isPickupConfirmed
+            ? dropoffLocation
+            : currentBooking.driverId
+            ? pickupLocation
+            : dropoffLocation
+        }
+        destinationCoords={
+          isPickupConfirmed
+            ? dropoffCoordinates
+            : currentBooking.driverId
+            ? pickupCoordinates
+            : dropoffCoordinates
+        }
       />
       <View style={styles.contentContainer}>
         <View style={styles.cardContainer}>
@@ -168,10 +193,12 @@ export default function BookConfirmScreen({ route }) {
               }}
             />
             <View>
-              <Text>
-                {userfirstName} {userlastName}
+            <Text style={{ fontWeight: "bold", fontSize: 18 }}>
+                Booked by
               </Text>
-              <Text>{userPhoneNumber}</Text>
+              <Text>
+                {userfirstName} {userlastName} || {userPhoneNumber}
+              </Text>
             </View>
           </View>
           <View style={styles.totalContainer}>
@@ -182,10 +209,12 @@ export default function BookConfirmScreen({ route }) {
               </Text>
             </Text>
             <TouchableOpacity onPress={() => navigation.push("FareMatrix")}>
-              <Text>View our Fare Matrix</Text>
+              <Text style={{ fontWeight: "bold", color: "#0066cc" }}>
+                View our Fare Matrix
+              </Text>
             </TouchableOpacity>
           </View>
-          {!driverId ? (
+          {!currentBooking.driverId ? (
             <TouchableOpacity
               style={styles.button}
               disabled={loading}
@@ -199,7 +228,7 @@ export default function BookConfirmScreen({ route }) {
                 )}
               </Text>
             </TouchableOpacity>
-          ) : !isPickupConfirmed ? (
+          ) : !currentBooking.isPickUp ? (
             <TouchableOpacity
               style={styles.button}
               disabled={loading}
@@ -293,6 +322,7 @@ const styles = StyleSheet.create({
   },
   profileHeader: {
     flexDirection: "row",
+    alignItems: 'center',
     gap: 12,
   },
   profilePic: {
